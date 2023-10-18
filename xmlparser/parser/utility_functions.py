@@ -39,3 +39,7 @@ def return_min_max_rating():
     max_rating = 5
     # Return the minimum and maximum rating values as a tuple
     return min_rating, max_rating
+
+def get_user_input(prompt):
+    """Get user input with a specified prompt."""
+    return input(prompt)
