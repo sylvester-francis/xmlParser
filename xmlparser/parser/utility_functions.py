@@ -43,3 +43,8 @@ def return_min_max_rating():
 def get_user_input(prompt):
     """Get user input with a specified prompt."""
     return input(prompt)
+
+def check_file_exists(filepath):
+    """Check if the specified file exists."""
+    if not os.path.isfile(filepath):
+        raise FileNotFoundError(f"The specified file is not found: {filepath}")

@@ -14,3 +14,16 @@ class InvalidRatingException(Exception):
 class ReportGenerationException(Exception):
     """Exception raised for errors during report generation."""
     pass
+class SaveChangesException(Exception):
+    """Exception raised for errors during save changes."""
+    pass
+class FileNotFoundError(Exception):
+    """Exception raised when a specified file is not found."""
+    pass
+
+class ReadFileException(Exception):
+    """Exception raised for errors during file reading."""
+    pass
+class XMLParsingException(Exception):
+    """Exception raised for errors during XML parsing."""
+    pass
