@@ -1,6 +1,6 @@
 '''
 This module contains the functions related to product manipulation
-(1). increase_price
+(1). increase_prices
 (2). rename_category
 (3). remove_products
 (4). generate_reports
@@ -26,22 +26,53 @@ class IncreasePriceException(Exception):
 class CategoryNotFoundException(Exception):
     """Exception raised when the specified category is not found."""
     pass
+class EmptyCategoryNameException(Exception):
+    """Exception raised when the new category name is an empty string."""
+    pass
 
-def increase_prices(products, user_category, percentage):
+def display_categories(existing_categories):
+    """Display the existing categories to the user."""
+    print("The following are the categories of products in the inventory")
+    for index, category in enumerate(existing_categories):
+        print(f'{index + 1}:{category}')
+
+def get_user_input(prompt):
+    """Get user input with a specified prompt."""
+    return input(prompt)
+
+def increase_prices(products, user_input_function=get_user_input):
     try:
         # Extract the existing categories from the product data
         existing_categories = list(set(existing_category['category'] for existing_category in products))
+
+        # Display the existing categories to the user
+        display_categories(existing_categories)
+
+        # Prompt the user to enter the category to increase prices
+        user_category = user_input_function("Enter the category of the products to increase the price of: ")
+
         # Check if the entered category exists
         if user_category not in existing_categories:
             raise CategoryNotFoundException("Category does not exist")
+
+        # Prompt the user to enter the percentage to increase the price by
+        percentage = float(user_input_function("Enter the percentage to increase the price by: "))
+
         # Iterate through products and update prices for the specified category
         for product in products:
             if product['category'] == user_category:
                 product['price'] = round(product['price'] + (product['price'] * percentage / 100), 2)
+
         # Return the updated products list
         return products
+
+    except (CategoryNotFoundException, ValueError) as e:
+        # Raise specific exceptions for unit testing
+        raise e
     except Exception as e:
-        raise IncreasePriceException(f"An exception occurred while trying to increase the price: {type(e).__name__} : Error message - {e}")
+        # Raise a generic exception with details for unit testing
+        raise IncreasePriceException(f"An exception occurred during price increase: {type(e).__name__} - {e}")
+
 
 def rename_category(products):
     try:
