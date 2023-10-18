@@ -1,50 +1,40 @@
 import sys
-import pytest
+import os,pytest
 from unittest.mock import patch
-
-from parser.user_interface import menu,quit
-
-# Mock product data for testing
-mock_products = [
-    {'category': 'Electronics', 'name': 'Laptop', 'price': 1000.0, 'rating': 4.5},
-    {'category': 'Books', 'name': 'Book', 'price': 20.0, 'rating': 4.0},
-    {'category': 'Electronics', 'name': 'Smartphone', 'price': 800.0, 'rating': 4.2}
-]
-# Test menu with invalid user choice
-def mock_input(choices):
-    return lambda _: choices.pop(0)
-
-def test_menu_invalid_choice(capsys, monkeypatch):
-    monkeypatch.setattr('builtins.input', mock_input(["7"]))
-    menu(mock_products)
-    captured = capsys.readouterr()
-    assert "Invalid input. Please select a valid option" in captured.out
+from parser.user_interface import menu, quit
+from parser.product_manipulation import increase_price, rename_category, remove_products, generate_reports
+from parser.file_operations import save_changes
+from parser.utility_functions import return_file_path
+from parser.xml_operations import parse_XML
 
 
-def test_menu_exit(capsys):
-    with patch('builtins.input', return_value="6"):
-        with pytest.raises(SystemExit):
-            menu(mock_products)
-            
-def test_quit(capsys, monkeypatch):
-    monkeypatch.setattr(sys, 'exit', lambda code: None)
-    with patch('parser.user_interface.save_changes') as mock_save_changes:
-        quit(mock_products)
-    # Ensure that the save_changes function was called with the correct argument
-    mock_save_changes.assert_called_once_with(mock_products)
-    # Check if the program would have exited with status code 1
-    captured = capsys.readouterr()
-    assert captured.out == ""
-    assert captured.err == ""
+@pytest.mark.parametrize("user_input, expected_output, mock_function, mock_function_args", [
+    ("1", "Prices increased successfully.", increase_price, ([],)),
+    ("2", "Categories renamed successfully.", rename_category, ([],)),
+    ("3", "Products removed successfully.", remove_products, ([],)),
+    ("4", "Generating reports", generate_reports, ([],)),
+    ("5", "File saved successfully.", save_changes, ([],)),
+    ("6", "Exiting... Goodbye", quit, ([],)),
+    ("7", "Invalid input. Please select a valid option", None, None),
+])
+def test_menu(user_input, expected_output, mock_function, mock_function_args):
+    products = [...]  # Your initial products list
+    with patch('builtins.input', return_value=user_input), patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+        if mock_function:
+            with patch(mock_function.__module__ + '.' + mock_function.__name__, return_value=mock_function_args[0]) as mock_function_patch:
+                menu(products)
+                mock_function_patch.assert_called_with(*mock_function_args)
+        else:
+            menu(products)
 
-def test_quit_empty(capsys, monkeypatch):
-    monkeypatch.setattr(sys, 'exit', lambda code: None)
-    with patch('parser.user_interface.save_changes') as mock_save_changes:
-        quit([])
-    # Ensure that the save_changes function was called with the correct argument
-    mock_save_changes.assert_called_once_with([])
-    # Check if the program would have exited with status code 1
-    captured = capsys.readouterr()
-    assert captured.out == ""
-    assert captured.err == ""
-  
+        output = mock_stdout.getvalue().strip()
+        assert expected_output in output
+
+def test_recursive_call():
+    with patch('builtins.input', side_effect=["1", "6"]), patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+        menu([])
+        output = mock_stdout.getvalue().strip()
+        assert "Exiting... Goodbye" in output
+
+if __name__ == '__main__':
+    pytest.main()

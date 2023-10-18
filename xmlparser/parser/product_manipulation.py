@@ -8,7 +8,7 @@ This module contains the functions related to product manipulation
 Author: Sylvester Ranjith Francis
 Date created : 10/15/2023
 Last modified by: Sylvester Ranjith Francis
-last modified date: 10/15/2023
+last modified date: 10/17/2023
 '''
 
 
@@ -18,22 +18,22 @@ from utility_functions import return_min_max_rating
 # Get the min and max ratings using the utility function
 min_rating, max_rating = return_min_max_rating()
 
-def increase_price(products):
+
+class IncreasePriceException(Exception):
+    """Exception raised for errors during the increase price process."""
+    pass
+
+class CategoryNotFoundException(Exception):
+    """Exception raised when the specified category is not found."""
+    pass
+
+def increase_prices(products, user_category, percentage):
     try:
         # Extract the existing categories from the product data
         existing_categories = list(set(existing_category['category'] for existing_category in products))
-        # Display the categories to the user
-        print("The following are the categories of products in the inventory")
-        for index, category in enumerate(existing_categories):
-            print(f'{index+1}:{category}')
-        # Prompt the user to enter the category to increase prices
-        user_category = input("Enter the category of the products to increase the price of: ")
         # Check if the entered category exists
         if user_category not in existing_categories:
-            print("Category does not exist")
-            return
-        # Prompt the user to enter the percentage to increase the price by
-        percentage = float(input("Enter the percentage to increase the price by: "))
+            raise CategoryNotFoundException("Category does not exist")
         # Iterate through products and update prices for the specified category
         for product in products:
             if product['category'] == user_category:
@@ -41,10 +41,7 @@ def increase_price(products):
         # Return the updated products list
         return products
     except Exception as e:
-        # Handle exceptions that may occur during price increase
-        print(f"An exception occurred while trying to increase the price: {type(e).__name__} : Error message - {e}")
-        # Raise the exception to be caught by the calling code
-        raise
+        raise IncreasePriceException(f"An exception occurred while trying to increase the price: {type(e).__name__} : Error message - {e}")
 
 def rename_category(products):
     try:
