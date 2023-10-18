@@ -1,6 +1,6 @@
 '''
 This module contains the functions related to product manipulation
-(1). increase_price
+(1). increase_prices
 (2). rename_category
 (3). remove_products
 (4). generate_reports
@@ -8,107 +8,97 @@ This module contains the functions related to product manipulation
 Author: Sylvester Ranjith Francis
 Date created : 10/15/2023
 Last modified by: Sylvester Ranjith Francis
-last modified date: 10/15/2023
+last modified date: 10/17/2023
 '''
 
 
 from prettytable import PrettyTable 
 # Import utility function for min and max ratings
-from utility_functions import return_min_max_rating  
-# Get the min and max ratings using the utility function
-min_rating, max_rating = return_min_max_rating()
+from utility_functions import return_min_max_rating ,get_user_input 
+from customExceptions import IncreasePriceException,CategoryNotFoundException,EmptyCategoryNameException,InvalidRatingException,ReportGenerationException
 
-def increase_price(products):
-    try:
-        # Extract the existing categories from the product data
-        existing_categories = list(set(existing_category['category'] for existing_category in products))
-        # Display the categories to the user
-        print("The following are the categories of products in the inventory")
-        for index, category in enumerate(existing_categories):
-            print(f'{index+1}:{category}')
-        # Prompt the user to enter the category to increase prices
-        user_category = input("Enter the category of the products to increase the price of: ")
-        # Check if the entered category exists
-        if user_category not in existing_categories:
-            print("Category does not exist")
-            return
-        # Prompt the user to enter the percentage to increase the price by
-        percentage = float(input("Enter the percentage to increase the price by: "))
-        # Iterate through products and update prices for the specified category
-        for product in products:
-            if product['category'] == user_category:
-                product['price'] = round(product['price'] + (product['price'] * percentage / 100), 2)
-        # Return the updated products list
-        return products
-    except Exception as e:
-        # Handle exceptions that may occur during price increase
-        print(f"An exception occurred while trying to increase the price: {type(e).__name__} : Error message - {e}")
-        # Raise the exception to be caught by the calling code
-        raise
 
-def rename_category(products):
+
+def display_categories(existing_categories):
+    """Display the existing categories to the user."""
+    print("The following are the categories of products in the inventory")
+    for index, category in enumerate(existing_categories):
+        print(f'{index + 1}:{category}')
+
+def increase_prices(products, user_input_function=get_user_input):
     try:
         # Extract the existing categories from the product data
         existing_categories = list(set(existing_category['category'] for existing_category in products))
         # Display the existing categories to the user
-        print("The following are the categories of products in the inventory")
-        for index, category in enumerate(existing_categories):
-            print(f'{index+1}:{category}')
-        # Prompt the user to enter the category to be renamed
-        user_category = input("Enter the category to be renamed: ")
+        display_categories(existing_categories)
+        # Prompt the user to enter the category to increase prices
+        user_category = user_input_function("Enter the category of the products to increase the price of: ")
         # Check if the entered category exists
         if user_category not in existing_categories:
-            print("Category does not exist")
-            return
+            raise CategoryNotFoundException("Category does not exist")
+        # Prompt the user to enter the percentage to increase the price by
+        percentage = float(user_input_function("Enter the percentage to increase the price by: "))
+        # Iterate through products and update prices for the specified category
+        for product in products:
+            if product['category'] == user_category:
+                product['price'] = round(product['price'] + (product['price'] * percentage / 100), 2)
+        return products
+    except (CategoryNotFoundException, ValueError) as e:
+        raise e
+    except Exception as e:
+        raise IncreasePriceException(f"An exception occurred during price increase: {type(e).__name__} - {e}")
+
+
+def rename_category(products, user_input_function=get_user_input):
+    try:
+        # Extract the existing categories from the product data
+        existing_categories = list(set(existing_category['category'] for existing_category in products))
+        # Display the existing categories to the user
+        display_categories(existing_categories)
+        # Prompt the user to enter the category to be renamed
+        user_category = user_input_function("Enter the category to be renamed: ")
+        # Check if the entered category exists
+        if user_category not in existing_categories:
+            raise CategoryNotFoundException("Category does not exist")
         # Prompt the user to enter the new name for the category
-        new_user_category = input("Enter the name you want to give this category:")
+        new_user_category = user_input_function("Enter the name you want to give this category:")
         # Check if the new category name is not an empty string
         if not new_user_category:
-            raise ValueError("New Category cannot be an empty string")
+            raise EmptyCategoryNameException("New Category cannot be an empty string")
         # Iterate through products and update the category name
         for product in products:
             if product['category'] == user_category:
                 product['category'] = new_user_category
         # Return the updated products list
         return products
+    except (CategoryNotFoundException, EmptyCategoryNameException) as e:
+        raise e
     except Exception as e:
-        # Handle exceptions that may occur during category renaming
-        print(f"An exception occurred while trying to rename the category: {type(e).__name__} : Error message - {e}")
-        # Raise the exception to be caught by the calling code
-        raise
+        raise ValueError(f"An exception occurred during category renaming: {type(e).__name__} - {e}")
 
-def remove_products(products):
+
+def remove_products(products, user_input_function=get_user_input, rating_function=return_min_max_rating):
     try:
-        # Prompt the user to enter the rating below which products should be removed
-        rating = float(input("Enter the rating below which all the products need to be removed:"))
-        # Check if the entered rating is within the specified range
+        min_rating, max_rating = rating_function()
+        rating = float(user_input_function(f"Enter the rating below which all the products need to be removed (between {min_rating} and {max_rating}): "))
         if not (min_rating <= rating <= max_rating):
-            raise ValueError(f"Value should be between {min_rating} and {max_rating}")
-        # Iterate through products and remove those below the specified rating
-        for product in products:
-            if product['rating'] < rating:
-                products.remove(product)
-        # Return the updated products list
+            raise InvalidRatingException(f"Value should be between {min_rating} and {max_rating}")
+        products[:] = [product for product in products if product['rating'] >= rating]
         return products
-    except ValueError as e:
-        # Handle the specific ValueError for invalid input
-        print(f"An exception occurred while trying to remove products: {type(e).__name__} : Error message - {e}")
-        # Raise the exception to be caught by the calling code
-        raise
-def generate_reports(products):
+    except (ValueError, InvalidRatingException) as e:
+        raise e
+    except Exception as e:
+        raise ValueError(f"An exception occurred while trying to remove products: {type(e).__name__} - {e}")
+    
+def generate_report_table(products):
+    """Generate a table with category, total products, and total price information."""
     try:
-        # Check if there are no products in the inventory
         if not products:
-            print("No products found in inventory")
-            return
-        # Dictionaries to store total products and total price for each category
+            return None  
         total_products_by_category = {}
         total_price_by_category = {}
-        # Iterate through each product in the list
         for product in products:
-            # Extract the category of the product
             category = product['category']
-            # Update the total products and total price for the category
             if category not in total_products_by_category:
                 total_products_by_category[category] = 0
                 total_price_by_category[category] = 0
@@ -120,11 +110,26 @@ def generate_reports(products):
         # Add rows to the table with category, total products, and total price information
         for category in total_products_by_category:
             table.add_row([category, total_products_by_category[category], total_price_by_category[category]])
-        # Print the generated table
-        print(table)
+        return table
     except Exception as e:
-        # Handle exceptions that may occur during report generation
-        print(f"An exception occurred while trying to generate reports: {type(e).__name__} : Error message - {e}")
-        # Raise the exception to be caught by the calling code
-        raise
+        raise ReportGenerationException(f"An exception occurred during report generation: {type(e).__name__} - {e}")
+    
+def print_report_table(table):
+    """Print the generated report table."""
+    if table:
+        print(table)
+    else:
+        print("No products found in inventory")
+
+def generate_reports(products):
+    try:
+        table = generate_report_table(products)
+        print_report_table(table)
+    except ReportGenerationException as e:
+        raise e
+    except Exception as e:
+        raise ReportGenerationException(f"An exception occurred during report generation: {type(e).__name__} - {e}")
+
+
+
 

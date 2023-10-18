@@ -4,37 +4,35 @@ This module contains the function to perform the xml parsing
 Author: Sylvester Ranjith Francis
 Date created : 10/15/2023
 Last modified by: Sylvester Ranjith Francis
-last modified date: 10/15/2023
+last modified date: 10/17/2023
 '''
 import xml.etree.ElementTree as ET
-# Function to parse an XML file and extract product data
+from customExceptions import XMLParsingException
+
+# Function to parse an XML product element and extract product data
+def parse_product_element(product):
+    """Parse an XML 'product' element and return product data."""
+    try:
+        category = product.get('category')
+        name = product.find('name').text
+        price = float(product.find('price').text)
+        rating = float(product.find('rating').text)
+        return {'category': category, 'name': name, 'price': price, 'rating': rating}
+    except Exception as e:
+        raise XMLParsingException(f"An exception occurred while parsing a 'product' element: {type(e).__name__} - {e}")
+
+# Function to parse an XML file and form product data list
 def parse_XML(xml_file):
     try:
-        # Parse the XML file using ElementTree
         tree = ET.parse(xml_file)
-
-        # Get the root element of the XML tree
         root = tree.getroot()
-
-        # List to store product data
         products = []
-
-        # Iterate through each 'product' element in the XML
-        for product in root.findall('product'):
-            # Extract information for each product and store it as a dictionary
-            product_data = {
-                'category': product.get('category'),
-                'name': product.find('name').text,
-                'price': float(product.find('price').text),
-                'rating': float(product.find('rating').text)
-            }
-            # Append the product data dictionary to the list
+        for product_element in root.findall('product'):
+            product_data = parse_product_element(product_element)
             products.append(product_data)
-        # Return the list of product data
         return products
-
+    except XMLParsingException as e:
+        raise e
     except Exception as e:
-        # Handle exceptions that may occur during XML parsing
-        print(f"Error parsing the provided XML file: {type(e).__name__} : Error message - {e}")
-        # Raise the exception to be caught by the calling code
-        raise
+        raise XMLParsingException(f"An exception occurred during XML parsing: {type(e).__name__} - {e}")
+

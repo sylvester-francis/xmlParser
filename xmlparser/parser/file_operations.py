@@ -13,50 +13,63 @@ import os
 # Importing etree module
 import xml.etree.ElementTree as ET
 # Importing utility functions
-from utility_functions import return_file_path
+from utility_functions import return_file_path,check_file_exists
+# Importing custom exceptions 
+from customExceptions import SaveChangesException,ReadFileException
+
 
 def read_file(filepath):
     try:
         # Check if the specified file exists
-        if not os.path.isfile(filepath):
-            # Raise an error if the file is not found
-            raise FileNotFoundError(f"The specified file is not found: {filepath}")
+        check_file_exists(filepath)
         # If the file exists, return the file path
         return filepath
-    except Exception as e:
-        # Handle any other exceptions that might occur
-        print(f"An exception occurred while trying to find the file: {type(e).__name__} : Error message - {e}")
-        # Re-raise the exception to propagate it further
-        raise
 
-def save_changes(products):
-    # Get command-line arguments
-    filePath = return_file_path()
-    # Create the root element for the XML tree
+    except FileNotFoundError as e:
+        # Raise specific exceptions for unit testing
+        raise e
+    except Exception as e:
+        # Raise a generic exception with details for unit testing
+        raise ReadFileException(f"An exception occurred during file reading: {type(e).__name__} - {e}")
+
+def create_product_element(product):
+    """Create an Element for a product with its attributes."""
+    product_elem = ET.Element('product', category=product['category'])
+    name_elem = ET.Element('name')
+    name_elem.text = product['name']
+    price_elem = ET.Element('price')
+    price_elem.text = str(product['price'])
+    rating_elem = ET.Element('rating')
+    rating_elem.text = str(product['rating'])
+    product_elem.append(name_elem)
+    product_elem.append(price_elem)
+    product_elem.append(rating_elem)
+    return product_elem
+
+def create_xml_tree(products):
+    """Create an ElementTree with products as elements."""
     root = ET.Element('products')
-    # Iterate over each product in the list of products and add them to the XML tree
-    for product in products: 
-        # Create an element for each product with its attributes   
-        product_elem = ET.Element('product', category=product['category'])
-        name_elem = ET.Element('name')
-        name_elem.text = product['name']
-        price_elem = ET.Element('price')
-        price_elem.text = str(product['price'])
-        rating_elem = ET.Element('rating')
-        rating_elem.text = str(product['rating'])
-        # Append child elements to the product element
-        product_elem.append(name_elem)
-        product_elem.append(price_elem)
-        product_elem.append(rating_elem)
-        # Append the product element to the root
+    for product in products:
+        product_elem = create_product_element(product)
         root.append(product_elem)
-    # Create an ElementTree with the root element    
-    tree = ET.ElementTree(root)
+    return ET.ElementTree(root)
+
+def write_xml_tree(tree, file_path):
+    """Write the XML tree to the specified file path."""
     try:
-        tree.write(filePath)
-    # Write the XML tree to the specified file
+        tree.write(file_path)
     except ET.ParseError as e:
-        # Handle parsing errors
-        print(f"An exception occured while trying to save the file: {type(e).__name__} : Error message - {e}")
-        # Re-raise the exception to propagate it further
-        raise
+        raise SaveChangesException(f"An exception occurred while trying to save the file: {type(e).__name__} : Error message - {e}")
+
+def save_changes(products, file_path=None):
+    try:
+        # Get file path from the parameter or use a default value
+        file_path = file_path or return_file_path()
+        # Create an ElementTree with products as elements
+        tree = create_xml_tree(products)
+        # Write the XML tree to the specified file path
+        write_xml_tree(tree, file_path)
+    except SaveChangesException as e:
+        raise e
+    except Exception as e:
+        raise SaveChangesException(f"An exception occurred during save changes: {type(e).__name__} - {e}")

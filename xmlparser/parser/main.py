@@ -5,7 +5,7 @@ and saves the results back to the xml file and generates reports from the xml fi
 Author: Sylvester Ranjith Francis
 Date created : 10/13/2023
 Last modified by: Sylvester Ranjith Francis
-last modified date: 10/13/2023
+last modified date: 10/17/2023
 '''
 
 # Import utility functions
@@ -15,7 +15,7 @@ from file_operations import read_file
 from xml_operations import parse_XML
 from user_interface import menu
 
-if __name__ == '__main__':
+def initial():
     # Get arguments passed in command line arguments
     args = return_args()
     # Read the file specified in command line arguments
@@ -28,3 +28,6 @@ if __name__ == '__main__':
         products = parse_XML(xml_file)
         # Display a menu for user options
         menu(products)
+
+if __name__ == '__main__':
+    initial()
