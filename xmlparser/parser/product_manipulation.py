@@ -15,8 +15,6 @@ last modified date: 10/17/2023
 from prettytable import PrettyTable 
 # Import utility function for min and max ratings
 from utility_functions import return_min_max_rating  
-# Get the min and max ratings using the utility function
-min_rating, max_rating = return_min_max_rating()
 
 
 class IncreasePriceException(Exception):
@@ -28,6 +26,12 @@ class CategoryNotFoundException(Exception):
     pass
 class EmptyCategoryNameException(Exception):
     """Exception raised when the new category name is an empty string."""
+    pass
+class InvalidRatingException(Exception):
+    """Exception raised when an invalid rating is provided."""
+    pass
+class ReportGenerationException(Exception):
+    """Exception raised for errors during report generation."""
     pass
 
 def display_categories(existing_categories):
@@ -105,36 +109,32 @@ def rename_category(products):
         # Raise the exception to be caught by the calling code
         raise
 
-def remove_products(products):
+def remove_products(products, user_input_function=get_user_input, rating_function=return_min_max_rating):
     try:
+        # Get the minimum and maximum rating values
+        min_rating, max_rating = rating_function()
         # Prompt the user to enter the rating below which products should be removed
-        rating = float(input("Enter the rating below which all the products need to be removed:"))
+        rating = float(user_input_function(f"Enter the rating below which all the products need to be removed (between {min_rating} and {max_rating}): "))
         # Check if the entered rating is within the specified range
         if not (min_rating <= rating <= max_rating):
-            raise ValueError(f"Value should be between {min_rating} and {max_rating}")
+            raise InvalidRatingException(f"Value should be between {min_rating} and {max_rating}")
         # Iterate through products and remove those below the specified rating
-        for product in products:
-            if product['rating'] < rating:
-                products.remove(product)
-        # Return the updated products list
+        products[:] = [product for product in products if product['rating'] >= rating]
         return products
-    except ValueError as e:
-        # Handle the specific ValueError for invalid input
-        print(f"An exception occurred while trying to remove products: {type(e).__name__} : Error message - {e}")
-        # Raise the exception to be caught by the calling code
-        raise
-def generate_reports(products):
+    except (ValueError, InvalidRatingException) as e:
+        raise e
+    except Exception as e:
+        # Raise a generic exception with details for unit testing
+        raise ValueError(f"An exception occurred while trying to remove products: {type(e).__name__} - {e}")
+def generate_report_table(products):
+    """Generate a table with category, total products, and total price information."""
     try:
-        # Check if there are no products in the inventory
         if not products:
-            print("No products found in inventory")
-            return
+            return None  
         # Dictionaries to store total products and total price for each category
         total_products_by_category = {}
         total_price_by_category = {}
-        # Iterate through each product in the list
         for product in products:
-            # Extract the category of the product
             category = product['category']
             # Update the total products and total price for the category
             if category not in total_products_by_category:
@@ -148,11 +148,26 @@ def generate_reports(products):
         # Add rows to the table with category, total products, and total price information
         for category in total_products_by_category:
             table.add_row([category, total_products_by_category[category], total_price_by_category[category]])
-        # Print the generated table
-        print(table)
+        return table
     except Exception as e:
-        # Handle exceptions that may occur during report generation
-        print(f"An exception occurred while trying to generate reports: {type(e).__name__} : Error message - {e}")
-        # Raise the exception to be caught by the calling code
-        raise
+        raise ReportGenerationException(f"An exception occurred during report generation: {type(e).__name__} - {e}")
+    
+def print_report_table(table):
+    """Print the generated report table."""
+    if table:
+        print(table)
+    else:
+        print("No products found in inventory")
+
+def generate_reports(products):
+    try:
+        table = generate_report_table(products)
+        print_report_table(table)
+    except ReportGenerationException as e:
+        raise e
+    except Exception as e:
+        raise ReportGenerationException(f"An exception occurred during report generation: {type(e).__name__} - {e}")
+
+
+
 
