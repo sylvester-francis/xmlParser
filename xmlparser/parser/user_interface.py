@@ -66,14 +66,15 @@ class MenuHandler:
                 save_changes(products)
                 print("No products to remove.")
         elif choice == "4":
-            report_filepath = return_file_path()
-            if os.path.isfile(report_filepath):
-                print(f"Generating reports from {report_filepath}")
-                parsed_products = parse_XML(report_filepath)
+            output_file_path = return_file_path()
+            print(os.path.isfile(output_file_path))
+            if os.path.isfile(output_file_path):
+                print(f"Generating reports from {output_file_path}")
+                parsed_products = parse_XML(output_file_path)
                 generate_reports(parsed_products)
-            else:
-                print("No changes detected. Generating reports from input file.")
+            else:    
                 generate_reports(products)
+                print(f'No changes detected,using original file')
         elif choice == "5":
             print("Saving the file")
             save_changes(products)
@@ -102,7 +103,6 @@ def menu(products, menu_handler=None):
     try:
         if menu_handler is None:
             menu_handler = MenuHandler()
-
         menu_options = {
             "1": "Increase prices",
             "2": "Rename categories",
@@ -111,60 +111,15 @@ def menu(products, menu_handler=None):
             "5": "Save the file",
             "6": "Exit"
         }
-
         menu_handler.display_menu_options(menu_options)
         choice = menu_handler.get_user_choice()
-
         if choice not in menu_options:
             menu_handler.handle_invalid_choice()
             return
-
-        if choice == "1":
-            print("Increasing prices")
-            updated_products = increase_prices(products, user_input_function=menu_handler.get_user_choice)
-            if updated_products:
-                save_changes(updated_products)
-                print("Prices increased successfully.")
-            else:
-                save_changes(products)
-                print("No products to update.")
-        elif choice == "2":
-            print("Renaming categories")
-            renamed_products = rename_category(products, user_input_function=menu_handler.get_user_choice)
-            if renamed_products:
-                save_changes(renamed_products)
-                print("Categories renamed successfully.")
-            else:
-                save_changes(products)
-                print("No categories to rename.")
-        elif choice == "3":
-            print("Removing products based on rating")
-            min_rating, max_rating = return_min_max_rating()
-            products_after_removal = remove_products(products, user_input_function=menu_handler.get_user_choice, rating_function=lambda: (min_rating, max_rating))
-            if products_after_removal:
-                save_changes(products_after_removal)
-                print("Products removed successfully.")
-            else:
-                save_changes(products)
-                print("No products to remove.")
-        elif choice == "4":
-            report_filepath = return_file_path()
-            if os.path.isfile(report_filepath):
-                print(f"Generating reports from {report_filepath}")
-                parsed_products = parse_XML(report_filepath)
-                generate_reports(parsed_products)
-            else:
-                print("No changes detected. Generating reports from input file.")
-                generate_reports(products)
-        elif choice == "5":
-            print("Saving the file")
-            save_changes(products)
-            print("File saved successfully.")
-        elif choice == "6":
-            print("Exiting... Goodbye")
-            menu_handler.exit_handler.exit_program(menu_handler.exit_code)
+        menu_handler.execute_menu_choice(choice, products)
     except Exception as e:
         menu_handler.handle_exception(e)
     # Recursive call to keep the menu running
     menu(products, menu_handler)
+
 

@@ -16,8 +16,9 @@ class ArgumentParserWrapper:
     """Wrapper class for ArgumentParser to enable easier testing."""
     @staticmethod
     def create_parser():
-        return argparse.ArgumentParser(description="XML Product Data parser")
-
+        parser = argparse.ArgumentParser(description="XML Product Data parser")
+        parser.add_argument('filepath', type=str, help="Path to the XML file")
+        return parser
 
 # Function to parse command-line arguments and return them
 def return_args(parser=None, args=None):
@@ -48,7 +49,8 @@ def check_file_exists(filepath):
 def return_file_path(directory='../output', filename='outputFile.xml'):
     try:
         filepath = os.path.join(directory, filename)
-        check_file_exists(filepath)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
         return filepath
     except FileNotFoundError as e:
         raise e
