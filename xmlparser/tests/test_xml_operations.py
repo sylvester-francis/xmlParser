@@ -1,39 +1,45 @@
-import pytest
-from parser.xml_operations import parse_XML 
+import re,pytest
 import xml.etree.ElementTree as ET
+from parser.xml_operations import parse_product_element, parse_XML
+from parser.customExceptions import XMLParsingException
 
-sample_xml_content = """
-<products>
-    <product category="Electronics">
-        <name>Laptop</name>
-        <price>1000.0</price>
-        <rating>4.5</rating>
-    </product>
-    <product category="Books">
-        <name>Python Crash Course</name>
-        <price>29.99</price>
-        <rating>5.0</rating>
-    </product>
-</products>
-"""
+def test_parse_product_element():
+    sample_product_element = ET.Element('product', category='Electronics')
+    ET.SubElement(sample_product_element, 'name').text = 'Laptop'
+    ET.SubElement(sample_product_element, 'price').text = '999.99'
+    ET.SubElement(sample_product_element, 'rating').text = '4.5'
+    result = parse_product_element(sample_product_element)
+    expected_result = {'category': 'Electronics', 'name': 'Laptop', 'price': 999.99, 'rating': 4.5}
+    assert result == expected_result
 
-def test_parse_XML_valid_xml(tmp_path):
-    xml_file_path = tmp_path / "test.xml"
-    with open(xml_file_path, "w") as xml_file:
-        xml_file.write(sample_xml_content)
-    result = parse_XML(xml_file_path)
+def test_parse_XML(tmp_path):
+    sample_xml_content = """
+    <products>
+        <product category="Electronics">
+            <name>Laptop</name>
+            <price>999.99</price>
+            <rating>4.5</rating>
+        </product>
+        <product category="Clothing">
+            <name>T-shirt</name>
+            <price>19.99</price>
+            <rating>3.8</rating>
+        </product>
+    </products>
+    """
+    sample_xml_file = tmp_path / 'sample.xml'
+    sample_xml_file.write_text(sample_xml_content)
+    result = parse_XML(str(sample_xml_file))
     expected_result = [
-        {'category': 'Electronics', 'name': 'Laptop', 'price': 1000.0, 'rating': 4.5},
-        {'category': 'Books', 'name': 'Python Crash Course', 'price': 29.99, 'rating': 5.0}
+        {'category': 'Electronics', 'name': 'Laptop', 'price': 999.99, 'rating': 4.5},
+        {'category': 'Clothing', 'name': 'T-shirt', 'price': 19.99, 'rating': 3.8}
     ]
     assert result == expected_result
 
-def test_parse_XML_invalid_xml(tmp_path):
-    invalid_xml_content = "Invalid XML content"
-    xml_file_path = tmp_path / "invalid.xml"
-    with open(xml_file_path, "w") as xml_file:
-        xml_file.write(invalid_xml_content)
-    with pytest.raises(Exception):
-        parse_XML(xml_file_path)
-
+def test_parse_XML_exception_handling(tmp_path):
+    sample_xml_content = "<invalid><tag></invalid>"
+    sample_xml_file = tmp_path / 'invalid_sample.xml'
+    sample_xml_file.write_text(sample_xml_content)
+    with pytest.raises(Exception) as exc_info:
+        parse_XML(str(sample_xml_file))
 

@@ -42,13 +42,10 @@ def increase_prices(products, user_input_function=get_user_input):
         for product in products:
             if product['category'] == user_category:
                 product['price'] = round(product['price'] + (product['price'] * percentage / 100), 2)
-        # Return the updated products list
         return products
     except (CategoryNotFoundException, ValueError) as e:
-        # Raise specific exceptions for unit testing
         raise e
     except Exception as e:
-        # Raise a generic exception with details for unit testing
         raise IncreasePriceException(f"An exception occurred during price increase: {type(e).__name__} - {e}")
 
 
@@ -75,29 +72,22 @@ def rename_category(products, user_input_function=get_user_input):
         # Return the updated products list
         return products
     except (CategoryNotFoundException, EmptyCategoryNameException) as e:
-        # Raise specific exceptions for unit testing
         raise e
     except Exception as e:
-        # Raise a generic exception with details for unit testing
         raise ValueError(f"An exception occurred during category renaming: {type(e).__name__} - {e}")
 
 
 def remove_products(products, user_input_function=get_user_input, rating_function=return_min_max_rating):
     try:
-        # Get the minimum and maximum rating values
         min_rating, max_rating = rating_function()
-        # Prompt the user to enter the rating below which products should be removed
         rating = float(user_input_function(f"Enter the rating below which all the products need to be removed (between {min_rating} and {max_rating}): "))
-        # Check if the entered rating is within the specified range
         if not (min_rating <= rating <= max_rating):
             raise InvalidRatingException(f"Value should be between {min_rating} and {max_rating}")
-        # Iterate through products and remove those below the specified rating
         products[:] = [product for product in products if product['rating'] >= rating]
         return products
     except (ValueError, InvalidRatingException) as e:
         raise e
     except Exception as e:
-        # Raise a generic exception with details for unit testing
         raise ValueError(f"An exception occurred while trying to remove products: {type(e).__name__} - {e}")
     
 def generate_report_table(products):
@@ -105,12 +95,10 @@ def generate_report_table(products):
     try:
         if not products:
             return None  
-        # Dictionaries to store total products and total price for each category
         total_products_by_category = {}
         total_price_by_category = {}
         for product in products:
             category = product['category']
-            # Update the total products and total price for the category
             if category not in total_products_by_category:
                 total_products_by_category[category] = 0
                 total_price_by_category[category] = 0

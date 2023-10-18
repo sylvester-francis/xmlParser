@@ -1,39 +1,48 @@
 import os
+import xml.etree.ElementTree as ET
 import pytest
-from parser.file_operations import read_file
+from unittest.mock import patch
+from parser.file_operations import read_file, save_changes
+from parser.customExceptions import SaveChangesException, ReadFileException
 
-# Test case for an existing file
-def test_read_file_existing_file(tmp_path):
-    # Create a temporary file
-    test_file = tmp_path / "test_file.txt"
-    test_file.write_text("Test content")
+class TestFileOperations:
+    # Test read_file function
+    def test_read_file_valid(self, tmp_path):
+        sample_xml_content = "<products></products>"
+        sample_xml_file = tmp_path / 'sample.xml'
+        sample_xml_file.write_text(sample_xml_content)
+        result = read_file(str(sample_xml_file))
+        assert result == str(sample_xml_file)
 
-    # Call the read_file function
-    result = read_file(str(test_file))
+    def test_read_file_invalid_file_not_found(self):
+        with pytest.raises(FileNotFoundError):
+            read_file('nonexistent_file.xml')
 
-    # Check if the result is the expected file path
-    assert result == str(test_file)
+    def test_read_file_invalid_exception(self, tmp_path):
+        sample_xml_content = "<products></products>"
+        sample_xml_file = tmp_path / 'sample.xml'
+        sample_xml_file.write_text(sample_xml_content)
+        with patch('parser.file_operations.check_file_exists', side_effect=Exception('Test')):
+            with pytest.raises(Exception) as exc_info:
+                read_file(str(sample_xml_file))
+        assert 'An exception occurred during file reading: Exception' in str(exc_info.value)
 
-# Test case for a non-existing file
-def test_read_file_non_existing_file(tmp_path):
-    # Create a temporary directory
-    test_dir = tmp_path / "test_dir"
-    test_dir.mkdir()
+    def test_save_changes_valid(self, tmp_path):
+        products = [{"category": "Electronics", "name": "Laptop", "price": 1000.0, "rating": 4.5}]
+        file_path = str(tmp_path / 'output.xml')
+        save_changes(products, file_path)
+        assert os.path.isfile(file_path)
 
-    # Specify a file path that doesn't exist
-    non_existing_file = test_dir / "non_existing_file.txt"
+    def test_save_changes_invalid_exception(self, tmp_path):
+        products = [{"category": "Electronics", "name": "Laptop", "price": 1000.0, "rating": 4.5}]
+        with patch('parser.file_operations.write_xml_tree', side_effect=Exception('Test')):
+            with pytest.raises(Exception) as exc_info:
+                save_changes(products)
+        assert 'An exception occurred during save changes: Exception - Test' in str(exc_info.value)
 
-    # Call the read_file function, and it should raise FileNotFoundError
-    with pytest.raises(FileNotFoundError):
-        read_file(str(non_existing_file))
-
-# Test case for handling other exceptions
-def test_read_file_other_exceptions(tmp_path):
-    # Create a temporary file
-    test_file = tmp_path / "test_file.txt"
-    test_file.write_text("Test content")
-
-    # Call the read_file function with an invalid file path
-    with pytest.raises(Exception):
-        read_file("invalid_file_path")
-
+    def test_save_changes_invalid_custom_exception(self, tmp_path):
+        products = [{"category": "Electronics", "name": "Laptop", "price": 1000.0, "rating": 4.5}]
+        with patch('parser.file_operations.write_xml_tree', side_effect=ET.ParseError('Test')):
+            with pytest.raises(Exception) as exc_info:
+                save_changes(products)
+        assert 'An exception occurred during save changes: ParseError - Test' in str(exc_info.value)

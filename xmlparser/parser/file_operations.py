@@ -65,16 +65,11 @@ def save_changes(products, file_path=None):
     try:
         # Get file path from the parameter or use a default value
         file_path = file_path or return_file_path()
-
         # Create an ElementTree with products as elements
         tree = create_xml_tree(products)
-
         # Write the XML tree to the specified file path
         write_xml_tree(tree, file_path)
-
     except SaveChangesException as e:
-        # Raise specific exceptions for unit testing
         raise e
     except Exception as e:
-        # Raise a generic exception with details for unit testing
         raise SaveChangesException(f"An exception occurred during save changes: {type(e).__name__} - {e}")

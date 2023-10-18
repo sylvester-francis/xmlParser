@@ -19,7 +19,6 @@ def parse_product_element(product):
         rating = float(product.find('rating').text)
         return {'category': category, 'name': name, 'price': price, 'rating': rating}
     except Exception as e:
-        # Raise specific exceptions for unit testing
         raise XMLParsingException(f"An exception occurred while parsing a 'product' element: {type(e).__name__} - {e}")
 
 # Function to parse an XML file and form product data list

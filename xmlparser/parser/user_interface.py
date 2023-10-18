@@ -13,7 +13,7 @@ import os,sys
 # Importing functions from other modules
 from product_manipulation import increase_prices, rename_category, remove_products, generate_reports
 from file_operations import save_changes
-from utility_functions import return_file_path,return_min_max_rating
+from utility_functions import return_file_path
 from xml_operations import parse_XML
 
 
@@ -21,7 +21,7 @@ class MenuHandler:
     """Handler for menu actions and external dependencies."""
     def __init__(self):
         self.exit_handler = ExitHandler()
-        self.exit_code = 1  # Default exit code
+        self.exit_code = 1 
 
     def display_menu_options(self, menu_options):
         print("**********************************************************************************")
@@ -119,7 +119,6 @@ def menu(products, menu_handler=None):
         menu_handler.execute_menu_choice(choice, products)
     except Exception as e:
         menu_handler.handle_exception(e)
-    # Recursive call to keep the menu running
     menu(products, menu_handler)
 
 

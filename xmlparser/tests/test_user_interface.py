@@ -1,40 +1,83 @@
-import sys
-import os,pytest
+import pytest
 from unittest.mock import patch
-from parser.user_interface import menu, quit
-from parser.product_manipulation import increase_price, rename_category, remove_products, generate_reports
-from parser.file_operations import save_changes
-from parser.utility_functions import return_file_path
-from parser.xml_operations import parse_XML
+from parser.user_interface import MenuHandler, ExitHandler, quit, menu
+from parser.customExceptions import CategoryNotFoundException
+
+class TestMenuFunctionality:
+    def test_display_menu_options(self, capsys):
+        menu_handler = MenuHandler()
+        menu_options = {"1": "Option 1", "2": "Option 2"}
+        menu_handler.display_menu_options(menu_options)
+        captured = capsys.readouterr()
+        assert "Welcome user" in captured.out
+        assert "Please select an option" in captured.out
+
+    @patch('builtins.input', return_value='1')
+    def test_get_user_choice(self, mock_input):
+        menu_handler = MenuHandler()
+        result = menu_handler.get_user_choice()
+        assert result == '1'
+                  
+    @patch('builtins.input', return_value='3')
+    def test_execute_menu_choice_remove_products(self, mock_input,capsys):
+        menu_handler = MenuHandler()
+        products = [{"name": "Product1", "price": 10.0, "category": "Electronics","rating":5}]
+        menu_handler.execute_menu_choice("3", products)
+        captured = capsys.readouterr()
+        assert "Removing products based on rating" in captured.out
+        assert "Products removed successfully" in captured.out
+
+    @patch('builtins.input', return_value='4')
+    def test_execute_menu_choice_generate_report_existing_file(self, mock_input,capsys):
+        menu_handler = MenuHandler()
+        products = [{"name": "Product1", "price": 10.0, "category": "Electronics","rating":5}]
+        with patch('os.path.isfile', return_value=True):
+            menu_handler.execute_menu_choice("4", products)
+            captured = capsys.readouterr()
+            assert "Generating reports from" in captured.out
 
 
-@pytest.mark.parametrize("user_input, expected_output, mock_function, mock_function_args", [
-    ("1", "Prices increased successfully.", increase_price, ([],)),
-    ("2", "Categories renamed successfully.", rename_category, ([],)),
-    ("3", "Products removed successfully.", remove_products, ([],)),
-    ("4", "Generating reports", generate_reports, ([],)),
-    ("5", "File saved successfully.", save_changes, ([],)),
-    ("6", "Exiting... Goodbye", quit, ([],)),
-    ("7", "Invalid input. Please select a valid option", None, None),
-])
-def test_menu(user_input, expected_output, mock_function, mock_function_args):
-    products = [...]  # Your initial products list
-    with patch('builtins.input', return_value=user_input), patch('sys.stdout', new_callable=StringIO) as mock_stdout:
-        if mock_function:
-            with patch(mock_function.__module__ + '.' + mock_function.__name__, return_value=mock_function_args[0]) as mock_function_patch:
-                menu(products)
-                mock_function_patch.assert_called_with(*mock_function_args)
-        else:
+    @patch('builtins.input', return_value='5')
+    def test_execute_menu_choice_save_file(self, mock_input,capsys):
+        menu_handler = MenuHandler()
+        products = [{"name": "Product1", "price": 10.0, "category": "Electronics","rating":5}]
+        menu_handler.execute_menu_choice("5", products)
+        captured = capsys.readouterr()
+        assert "Saving the file" in captured.out
+        assert "File saved successfully" in captured.out
+
+    @patch('builtins.input', return_value='6')
+    def test_execute_menu_choice_exit_program(self, mock_input,capsys):
+        menu_handler = MenuHandler()
+        with patch.object(ExitHandler, 'exit_program') as mock_exit_program:
+            menu_handler.execute_menu_choice("6", [])
+            mock_exit_program.assert_called_once_with(menu_handler.exit_code)
+
+    def test_handle_exception(self, capsys):
+        menu_handler = MenuHandler()
+        menu_handler.handle_exception(Exception("Test exception"))
+        captured = capsys.readouterr()
+        assert "An error occurred: Exception - Test exception" in captured.out
+
+class TestExitHandler:
+    def test_exit_program(self):
+        with pytest.raises(SystemExit) as e:
+            ExitHandler.exit_program(1)
+        assert e.type == SystemExit
+        assert e.value.code == 1
+
+class TestQuitFunctionality:
+    def test_quit(self):
+        products = [{"name": "Product1", "price": 10.0, "category": "Electronics","rating":5}]
+        with patch.object(ExitHandler, 'exit_program') as mock_exit_program:
+                quit(products)
+                mock_exit_program.assert_called_once()
+
+class TestMenu:
+    def test_menu_invalid_choice(self, capsys):
+        products = [{"name": "Product1", "price": 10.0, "category": "Electronics","rating":5}]
+        with patch('builtins.input', return_value='invalid'):
             menu(products)
+            captured = capsys.readouterr()
+            assert "Invalid input. Please select a valid option" in captured.out
 
-        output = mock_stdout.getvalue().strip()
-        assert expected_output in output
-
-def test_recursive_call():
-    with patch('builtins.input', side_effect=["1", "6"]), patch('sys.stdout', new_callable=StringIO) as mock_stdout:
-        menu([])
-        output = mock_stdout.getvalue().strip()
-        assert "Exiting... Goodbye" in output
-
-if __name__ == '__main__':
-    pytest.main()

@@ -4,6 +4,7 @@ This module contains the utility functions
 (2). return_min_max_ratings
 (3). get_user_input
 (4). check_file_exists
+(5). return_file_path
 
 Author: Sylvester Ranjith Francis
 Date created : 10/15/2023
